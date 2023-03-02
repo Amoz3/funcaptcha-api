@@ -89,7 +89,7 @@ func jannyFunc() {
 				return nil
 			}
 
-			if strings.Contains(path, "git") {
+			if strings.Contains(path, ".git") {
 				return nil
 			}
 
