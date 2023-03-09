@@ -5,9 +5,19 @@ import (
 	"io"
 	"os"
 
+	"github.com/fatih/color"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 	"github.com/youpy/go-wav"
 )
+
+const SAMPLE_RATE = 44100
+
+// time to cut is calculated off the starting samples index converted to time, so it includes the actual pattern
+// the pattern will always be the same time so these values will work fine to cut out the "option x" audio, but will
+// need to be modified if the patterns ever change significantly
+const OPTION_ONE_LENGTH = 3.15
+const OPTION_TWO_LENGTH = 1.15
+const OPTION_THREE_LENGTH = 1.4
 
 func PatternSplit(filePath, dirPath string) []string {
 	wavFile := dirPath + "convertedToWav.wav"
@@ -18,32 +28,40 @@ func PatternSplit(filePath, dirPath string) []string {
 		Run()
 
 	// get split times based on pattern start index
-	fristIndex := PatternDetect(OptionOnePattern, wavFile) // i should get rid of this i think 1st is always the same
-	secondIndex := PatternDetect(OptionTwoPattern,  wavFile)
-	thirdIndex := PatternDetect(OptionThreePattern, wavFile)
+	fristIndex, _ := PatternDetect(OptionOnePattern, wavFile) // i should get rid of this i think 1st is always the same
+	secondIndex, _ := PatternDetect(OptionTwoPattern, wavFile)
+	thirdIndex, ttlSamples := PatternDetect(OptionThreePattern, wavFile)
 
 	// split and return file names
-	guessOne := splitWav(wavFile, dirPath + "guess_one.wav", indexToTime(fristIndex), 1)
-	guessTwo := splitWav(wavFile, dirPath + "guess_two.wav", indexToTime(secondIndex), 1)
-	guessThree := splitWav(wavFile, dirPath + "guess_three.wav", indexToTime(thirdIndex), 1)
-	
+	guessOne := splitWav(wavFile, dirPath+"guess_one.wav", indexToTime(fristIndex)+OPTION_ONE_LENGTH, timeBetweenTwoIndexes(fristIndex, secondIndex)-OPTION_ONE_LENGTH)
+	guessTwo := splitWav(wavFile, dirPath+"guess_two.wav", indexToTime(secondIndex)+OPTION_TWO_LENGTH, timeBetweenTwoIndexes(secondIndex, thirdIndex)-OPTION_TWO_LENGTH)
+	guessThree := splitWav(wavFile, dirPath+"guess_three.wav", indexToTime(thirdIndex)+OPTION_THREE_LENGTH, timeBetweenTwoIndexes(thirdIndex, ttlSamples))
+
 	return []string{guessOne, guessTwo, guessThree}
 }
 
 func splitWav(inputFilePath, output string, starttime, length float32) string {
+	color.Cyan("splitting to output: %s w/ length: %f", output, length)
 	ffmpeg.Input(inputFilePath).
-		Output(output, ffmpeg.KwArgs{"acodec": "copy"}, ffmpeg.KwArgs{"ss": 3.2}, ffmpeg.KwArgs{"t": 3}).
+		Output(output, ffmpeg.KwArgs{"acodec": "copy"}, ffmpeg.KwArgs{"ss": starttime}, ffmpeg.KwArgs{"t": length}).
 		OverWriteOutput().
 		Run()
-		return output
+	return output
+}
+
+func timeBetweenTwoIndexes(indexOne, indexTwo int) float32 {
+	if indexOne > indexTwo {
+		return float32((indexOne - indexTwo) / SAMPLE_RATE)
+	}
+	return float32((indexTwo - indexOne) / SAMPLE_RATE)
 }
 
 func indexToTime(sampleIndex int) float32 {
-	sampleRate := 44100
-	return float32(sampleIndex / sampleRate)
+	return float32(sampleIndex / SAMPLE_RATE)
 }
 
-func PatternDetect(pattern []int, inputPath string) int {
+// 2nd return is the size of all the samples so i can get from option 3 to eof
+func PatternDetect(pattern []int, inputPath string) (int, int) {
 
 	wavFile, err := os.Open(inputPath)
 	if err != nil {
@@ -87,7 +105,7 @@ func PatternDetect(pattern []int, inputPath string) int {
 
 		entry := wavReader.IntValue(sample, 0)
 		// bits seem to be off by a bit sometimes this will allow for inperfect matches
-		tolerence := 100
+		tolerence := 10
 		expectedVal := pattern[patternIndex]
 		// if entry != expectedVal {
 		if !InBetween(entry, expectedVal-tolerence, expectedVal+tolerence) {
@@ -112,7 +130,7 @@ func PatternDetect(pattern []int, inputPath string) int {
 
 	fmt.Printf("Pattern start %d, Pattern end %d, Longest pattern: %d Pattern length: %d, total samples length %d\n ",
 		patternStart, patternEnd, highestIndex, len(pattern), len(samples))
-	return bestStart
+	return bestStart, len(samples)
 }
 
 func InBetween(i, min, max int) bool {

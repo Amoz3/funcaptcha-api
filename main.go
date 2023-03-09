@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"funcaptcha_api/gamevariants"
-	"funcaptcha_api/signals"
 	"io"
 	"io/fs"
 	"net/http"
@@ -20,22 +19,14 @@ import (
 var solverMap = make(map[string]gamevariants.AudioSolver)
 
 func main() {
-	testfile := "./test/frcrowdsound.wav"
-	signals.PatternDetect(signals.OptionOnePattern, testfile)
-	signals.PatternDetect(signals.OptionTwoPattern, testfile)
-	signals.PatternDetect(signals.OptionThreePattern, testfile)
-
-	// signals.SavePattern("./test/option_two.wav", "./test/pattern_two.txt")
-	// signals.SavePattern("./test/option_two_3step.wav", "./test/pattern_two_3step.txt")
-	// signals.SavePattern("./test/crowdsound.wav", "./test/crowdsound_full.txt")
-	return
 	gin := gin.Default()
 
 	gin.POST("/solve", solveHandler)
 
 	solverMap["crowdsound"] = gamevariants.CrowdSoundSolver
+	solverMap["count_3_footsteps"] = gamevariants.ThreeFootstepSolver
 
-	go jannyFunc()
+	// go jannyFunc()
 	gin.Run(":9911")
 }
 
