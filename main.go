@@ -21,7 +21,8 @@ var solverMap = make(map[string]gamevariants.AudioSolver)
 
 func main() {
 	// signals.PatternDetect(signals.OptionOnePattern, "./test/3_footsteps.wav")
-	signals.SavePattern("./test/option_one.wav", "./test/pattern.txt")
+	signals.SavePattern("./test/option_two.wav", "./test/pattern_two.txt")
+	signals.SavePattern("./test/option_three.wav", "./test/pattern_three.txt")
 	return
 	gin := gin.Default()
 
