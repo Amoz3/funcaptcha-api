@@ -5,7 +5,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"time"
 
 	"github.com/youpy/go-wav"
 )
@@ -46,7 +45,7 @@ func SavePattern(inputfile, outputFile string) {
 	ioutil.WriteFile(file.Name(), []byte(fileData), 0777)
 }
 
-func PatternDetect(pattern []int, inputPath string) {
+func PatternDetect(pattern []int, inputPath string) int {
 
 	wavFile, err := os.Open(inputPath)
 	if err != nil {
@@ -72,36 +71,52 @@ func PatternDetect(pattern []int, inputPath string) {
 	// index for the start and end of the pattern in challenge
 	patternStart := 0
 	patternEnd := 0
+	// best start is the start index for the longest pattern
+	bestStart := 0
 
+	fmt.Println(len(samples))
 	for sampleIndex, sample := range samples {
 		if patternIndex > highestIndex {
+			bestStart = patternStart
 			highestIndex = patternIndex
 		}
+
 		if patternIndex >= len(pattern) {
-			fmt.Println("break")
 			patternEnd = sampleIndex
+			fmt.Println("Pattern found.")
 			break
 		}
 
 		entry := wavReader.IntValue(sample, 0)
-		fmt.Println(entry)
-		if pattern[patternIndex] != entry && patternIndex > 3 {
-			fmt.Printf("pattern broken %d\n", patternIndex)
-			time.Sleep(2 * time.Second)
-			// break
+		// bits seem to be off by a bit sometimes this will allow for inperfect matches
+		tolerence := 100
+		expectedVal := pattern[patternIndex]
+		// if entry != expectedVal {
+		if !InBetween(entry, expectedVal-tolerence, expectedVal+tolerence) {
+			if patternIndex > 5 {
+				fmt.Printf("\n expected: %d got %d @ sample %d pattern index: %d\n", expectedVal, entry, sampleIndex, patternIndex)
+			}
+			patternIndex = 0
 		}
 
-		if pattern[patternIndex] == entry {
-			fmt.Printf("match %d\n", patternIndex)
+		expectedVal = pattern[patternIndex]
+		// if entry == expectedVal {
+		if InBetween(entry, expectedVal-tolerence, expectedVal+tolerence) {
 			if patternIndex == 0 {
 				patternStart = sampleIndex
+				if bestStart == 0 {
+					bestStart = patternStart
+				}
 			}
 			patternIndex++
-		} else {
-			patternIndex = 0
 		}
 	}
 
 	fmt.Printf("Pattern start %d, Pattern end %d, Longest pattern: %d Pattern length: %d, total samples length %d\n ",
 		patternStart, patternEnd, highestIndex, len(pattern), len(samples))
+	return bestStart
+}
+
+func InBetween(i, min, max int) bool {
+	return (i >= min) && (i <= max)
 }
