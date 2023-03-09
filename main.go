@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"funcaptcha_api/gamevariants"
+	"funcaptcha_api/signals"
 	"io"
 	"io/fs"
 	"net/http"
@@ -19,6 +20,8 @@ import (
 var solverMap = make(map[string]gamevariants.AudioSolver)
 
 func main() {
+	signals.SavePattern("./option_one.wav", "./option_one_data.txt")
+	return
 	gin := gin.Default()
 
 	gin.POST("/solve", solveHandler)
@@ -30,6 +33,7 @@ func main() {
 }
 
 func solveHandler(c *gin.Context) {
+
 	gamevariant := c.PostForm("gamevariant")
 	timestamp := time.Now().UnixNano()
 
