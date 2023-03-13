@@ -11,6 +11,8 @@ var FakeCatsSolver AudioSolver = AudioSolver{
 	Classifier: classifyFakeCat,
 }
 
+// https://cdn.discordapp.com/attachments/1080648036264448070/1083683130197688380/chart.png
+
 func classifyFakeCat(splits ...string) int {
 	for count, fileName := range splits {
 		avgCrossing := signals.AvgCrossingTime(fileName)

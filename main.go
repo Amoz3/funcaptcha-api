@@ -32,6 +32,8 @@ func main() {
 	solverMap["crowdsound"] = gamevariants.CrowdSoundSolver
 	// solverMap["count_3_footsteps"] = gamevariants.ThreeFootstepSolver
 	solverMap["fake_cats"] = gamevariants.FakeCatsSolver
+	solverMap["fake_bees"] = gamevariants.FakeBeesSolver
+	solverMap["recognise_drums"] = gamevariants.RecogniseDrumsSolver
 
 	go jannyFunc()
 	gin.Run(":9911")
