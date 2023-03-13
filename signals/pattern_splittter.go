@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/fatih/color"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
@@ -15,27 +16,35 @@ const SAMPLE_RATE = 44100
 // time to cut is calculated off the starting samples index converted to time, so it includes the actual pattern
 // the pattern will always be the same time so these values will work fine to cut out the "option x" audio, but will
 // need to be modified if the patterns ever change significantly
-const OPTION_ONE_LENGTH = 3.15
-const OPTION_TWO_LENGTH = 1.15
-const OPTION_THREE_LENGTH = 1.4
+const OPTION_ONE_LENGTH = 1
+const OPTION_TWO_LENGTH = 1.8
+const OPTION_THREE_LENGTH = 1.5
 
 func PatternSplit(filePath, dirPath string) []string {
-	wavFile := dirPath + "convertedToWav.wav"
+	timestamp := fmt.Sprintf("%d", time.Now().Unix())
+	wavFile := dirPath + fmt.Sprintf("convertedToWav%d.wav", time.Now().Nanosecond())
 	// convert mp3 to wav, maybe want mime type check here
 	ffmpeg.Input(filePath).
 		Output(wavFile).
 		OverWriteOutput().
 		Run()
+	time.Sleep(3 * time.Second)
 
 	// get split times based on pattern start index
 	fristIndex, _ := PatternDetect(OptionOnePattern, wavFile) // i should get rid of this i think 1st is always the same
 	secondIndex, _ := PatternDetect(OptionTwoPattern, wavFile)
 	thirdIndex, ttlSamples := PatternDetect(OptionThreePattern, wavFile)
 
+	if secondIndex > thirdIndex {
+		color.Red("problem detecting third option in wav file: %s", wavFile)
+		panic("")
+	}
+
 	// split and return file names
-	guessOne := splitWav(wavFile, dirPath+"guess_one.wav", indexToTime(fristIndex)+OPTION_ONE_LENGTH, timeBetweenTwoIndexes(fristIndex, secondIndex)-OPTION_ONE_LENGTH)
-	guessTwo := splitWav(wavFile, dirPath+"guess_two.wav", indexToTime(secondIndex)+OPTION_TWO_LENGTH, timeBetweenTwoIndexes(secondIndex, thirdIndex)-OPTION_TWO_LENGTH)
-	guessThree := splitWav(wavFile, dirPath+"guess_three.wav", indexToTime(thirdIndex)+OPTION_THREE_LENGTH, timeBetweenTwoIndexes(thirdIndex, ttlSamples))
+	guessOne := splitWav(wavFile, dirPath+timestamp+"guess_one.wav", indexToTime(fristIndex)+OPTION_ONE_LENGTH, timeBetweenTwoIndexes(fristIndex, secondIndex)-0.3)
+	// -0.4 is just because the three pattern starts late
+	guessTwo := splitWav(wavFile, dirPath+timestamp+"guess_two.wav", indexToTime(secondIndex)+OPTION_TWO_LENGTH, timeBetweenTwoIndexes(secondIndex, thirdIndex)-1)
+	guessThree := splitWav(wavFile, dirPath+timestamp+"guess_three.wav", indexToTime(thirdIndex)+OPTION_THREE_LENGTH, timeBetweenTwoIndexes(thirdIndex, ttlSamples))
 
 	return []string{guessOne, guessTwo, guessThree}
 }
@@ -109,8 +118,8 @@ func PatternDetect(pattern []int, inputPath string) (int, int) {
 		expectedVal := pattern[patternIndex]
 		// if entry != expectedVal {
 		if !InBetween(entry, expectedVal-tolerence, expectedVal+tolerence) {
-			if patternIndex > 5 {
-				fmt.Printf("\n expected: %d got %d @ sample %d pattern index: %d\n", expectedVal, entry, sampleIndex, patternIndex)
+			if patternIndex > 5000 {
+				// fmt.Printf("\n expected: %d got %d @ sample %d pattern index: %d\n", expectedVal, entry, sampleIndex, patternIndex)
 			}
 			patternIndex = 0
 		}
@@ -128,8 +137,8 @@ func PatternDetect(pattern []int, inputPath string) (int, int) {
 		}
 	}
 
-	fmt.Printf("Pattern start %d, Pattern end %d, Longest pattern: %d Pattern length: %d, total samples length %d\n ",
-		patternStart, patternEnd, highestIndex, len(pattern), len(samples))
+	fmt.Printf("Longest pattern start: %d Pattern start %d, Pattern end %d, Longest pattern: %d Pattern length: %d, total samples length %d\n ",
+		bestStart, patternStart, patternEnd, highestIndex, len(pattern), len(samples))
 	return bestStart, len(samples)
 }
 

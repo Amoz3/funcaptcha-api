@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"funcaptcha_api/gamevariants"
+	"funcaptcha_api/signals"
 	"io"
 	"io/fs"
 	"net/http"
@@ -19,15 +20,43 @@ import (
 var solverMap = make(map[string]gamevariants.AudioSolver)
 
 func main() {
+	// filepath.Walk("./test/unsplit", splitAll)
+	// filepath.Walk("./test/splits", savePatterns)
+	// signals.SavePattern("./test/fuckedupthird_cropped.wav", "./cropped_fucked.txt")
+	// signals.SavePattern("./test/okay_third_cropped.wav", "./cropped_okay.txt")
+
 	gin := gin.Default()
 
 	gin.POST("/solve", solveHandler)
 
 	solverMap["crowdsound"] = gamevariants.CrowdSoundSolver
-	solverMap["count_3_footsteps"] = gamevariants.ThreeFootstepSolver
+	// solverMap["count_3_footsteps"] = gamevariants.ThreeFootstepSolver
+	solverMap["fake_cats"] = gamevariants.FakeCatsSolver
 
-	// go jannyFunc()
+	go jannyFunc()
 	gin.Run(":9911")
+}
+
+func savePatterns(path string, fileInfo fs.FileInfo, err error) error {
+	if err != nil || fileInfo.IsDir() || !strings.Contains(fileInfo.Name(), "converted") {
+		return err
+	}
+
+	signals.SavePattern(path, fmt.Sprintf("./crowdsound_whole_%s.txt", fileInfo.Name()))
+	return nil
+}
+
+func splitAll(path string, fileInfo fs.FileInfo, err error) error {
+	if err != nil {
+		return err
+	}
+
+	if fileInfo.IsDir() {
+		return nil
+	}
+
+	signals.PatternSplit(path, "./test/splits/")
+	return nil
 }
 
 func solveHandler(c *gin.Context) {
@@ -37,7 +66,9 @@ func solveHandler(c *gin.Context) {
 
 	solver, contains := solverMap[gamevariant]
 	if !contains {
+		color.Cyan("Game upsupported: " + gamevariant)
 		c.String(210, "game not supported")
+		return
 	}
 
 	file, err := c.FormFile("file")
