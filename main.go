@@ -32,7 +32,7 @@ func main() {
 	solverMap["recognise_drums"] = gamevariants.RecogniseDrumsSolver
 
 	go jannyFunc()
-	gin.Run(":9911")
+	gin.Run(":" + os.Getenv("PORT"))
 }
 
 func savePatterns(path string, fileInfo fs.FileInfo, err error) error {
