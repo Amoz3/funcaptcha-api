@@ -20,8 +20,6 @@ import (
 var solverMap = make(map[string]gamevariants.AudioSolver)
 
 func main() {
-	filepath.Walk("./test/unsplit", splitAll)
-	return
 
 	gin := gin.Default()
 
