@@ -23,7 +23,7 @@ func crowdSplitter(filename, dirPath string) []string {
 	outputThree := fmt.Sprintf("%sguess_2_%d.wav", dirPath, timestamp)
 	color.Magenta(outputOne)
 	ffmpeg.Input(filename).
-		Output(outputOne, ffmpeg.KwArgs{"acodec": "copy"}, ffmpeg.KwArgs{"ss": 3.2}, ffmpeg.KwArgs{"t": 3}).
+		Output(outputOne, ffmpeg.KwArgs{"ss": 3.2}, ffmpeg.KwArgs{"t": 3}).
 		OverWriteOutput().
 		Run()
 	ffmpeg.Input(filename).

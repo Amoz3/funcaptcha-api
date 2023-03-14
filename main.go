@@ -20,10 +20,8 @@ import (
 var solverMap = make(map[string]gamevariants.AudioSolver)
 
 func main() {
-	// filepath.Walk("./test/unsplit", splitAll)
-	// filepath.Walk("./test/splits", savePatterns)
-	// signals.SavePattern("./test/fuckedupthird_cropped.wav", "./cropped_fucked.txt")
-	// signals.SavePattern("./test/okay_third_cropped.wav", "./cropped_okay.txt")
+	filepath.Walk("./test/unsplit", splitAll)
+	return
 
 	gin := gin.Default()
 
@@ -57,7 +55,7 @@ func splitAll(path string, fileInfo fs.FileInfo, err error) error {
 		return nil
 	}
 
-	signals.PatternSplit(path, "./test/splits/")
+	gamevariants.SplitRepeatingSongs(path, "./test/splits/")
 	return nil
 }
 
@@ -82,7 +80,7 @@ func solveHandler(c *gin.Context) {
 		panic(err)
 	}
 
-	destinationDir := fmt.Sprintf("./%s/%d/", gamevariant, timestamp)
+	destinationDir := fmt.Sprintf("./working/%s/%d/", gamevariant, timestamp)
 	destinationPath := fmt.Sprintf("%s%s", destinationDir, file.Filename)
 
 	src, err := file.Open()
