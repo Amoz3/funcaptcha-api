@@ -51,6 +51,7 @@ func PatternSplit(filePath, dirPath string) []string {
 
 func splitWav(inputFilePath, output string, starttime, length float32) string {
 	color.Cyan("splitting to output: %s w/ length: %f", output, length)
+	// okay to copy codec because its been transformed to a wav prior
 	ffmpeg.Input(inputFilePath).
 		Output(output, ffmpeg.KwArgs{"acodec": "copy"}, ffmpeg.KwArgs{"ss": starttime}, ffmpeg.KwArgs{"t": length}).
 		OverWriteOutput().

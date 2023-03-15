@@ -24,6 +24,8 @@ func main() {
 	gin := gin.Default()
 
 	gin.POST("/solve", solveHandler)
+	
+	// solverMap["smeep"] = *gamevariants.RepeatingSongRegressionSolver.AudioSolver
 
 	solverMap["crowdsound"] = gamevariants.CrowdSoundSolver
 	// solverMap["count_3_footsteps"] = gamevariants.ThreeFootstepSolver
